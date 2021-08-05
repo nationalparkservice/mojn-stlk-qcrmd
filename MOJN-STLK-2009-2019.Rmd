@@ -36,10 +36,11 @@ This QA/QC report includes discrete data collected for the Mojave Desert Network
 # Sites not visited
 This is a list of sites that were not visited for annual monitoring during a field season. Stream sampling moved from GRBA_S_BAKR2 (South Fork) to GRBA_S_BAKR3 (Main Stem) in 2011. Brown Lake and Dead Lake were monitored during the pilot field season in 2009. Dead Lake and Johnson Lake were not monitored in 2013 due to the lapse in federal appropriations.
 ``` {r no.visits}
-# no.visits <- qcNoAnnualVisit(conn)
+no.visits <- qcNoAnnualVisit(conn)
 
-# no.visits %>%
-#  DT::datatable()
+no.visits %>%
+  dplyr::select(-VisitDate) %>%
+  DT::datatable()
 ```
 
 # Lake level and benchmark elevations {.tabset}
@@ -133,44 +134,44 @@ lake.not.dry.no.depths %>%
 
 # Discrete water quality {.tabset}
 ## Stream sanity check
-These are stream water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
+These are stream water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of instrument malfunction, improper callibration, or typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
 ``` {r wq.stream.sanity}
-# wq.stream.sanity <- qcStreamWqSanity(conn)
+wq.stream.sanity <- qcStreamWqSanity(conn)
 
-# wq.stream.sanity %>%
-#  DT::datatable(filter = "top")
+wq.stream.sanity %>%
+  DT::datatable(filter = "top")
 ```
-There are **r nrow(wq.stream.sanity)** measurements outside of expected ranges.
+There are `r nrow(wq.stream.sanity)` measurements outside of expected ranges.
 
 ## Lake sanity check
-These are lake water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
+These are lake water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of instrument malfunction, improper callibration, or typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
 ``` {r wq.lake.sanity}
-# wq.lake.sanity <- qcLakeWqSanity(conn)
+wq.lake.sanity <- qcLakeWqSanity(conn)
 
-# wq.lake.sanity %>%
-#  DT::datatable(filter = "top")
+wq.lake.sanity %>%
+  DT::datatable(filter = "top")
 ```
-There are **r nrow(wq.lake.sanity)** measurements outside of expected ranges.
+There are `r nrow(wq.lake.sanity)` measurements outside of expected ranges.
 
 ## Stream data quality flags
 These are stream water quality values that have data quality flags. I = Information: These data do not have any suspected problems, but there may be information regarding the equipment or conditions in which they were collected that could inform their interpretation. W = Warning: These data are suspected to have problems and should only be used after careful assessment of instrument and environmental factors. C = Critical: These data are suspected to have serious problems and are likely unusable.
 ``` {r wq.stream.flags}
-# wq.stream.flags <- qcStreamWqFlags(conn)
+wq.stream.flags <- qcStreamWqFlags(conn)
 
-# wq.stream.flags %>%
-#  DT:datatable(filter = "top")
+wq.stream.flags %>%
+  DT::datatable(filter = "top")
 ```
-There are **r nrow(wq.stream.flags)** flagged measurements.
+There are `r nrow(wq.stream.flags)` flagged measurements.
 
 ## Lake data quality flags
 These are lake water quality values that have data quality flags. I = Information: These data do not have any suspected problems, but there may be information regarding the equipment or conditions in which they were collected that could inform their interpretation. W = Warning: These data are suspected to have problems and should only be used after careful assessment of instrument and environmental factors. C = Critical: These data are suspected to have serious problems and are likely unusable.
 ``` {r wq.lake.flags}
-# wq.lake.flags <- qcLakeWqFlags(conn)
+wq.lake.flags <- qcLakeWqFlags(conn)
 
-# wq.lake.flags %>%
-#  DT:datatable(filter = "top")
+wq.lake.flags %>%
+  DT::datatable(filter = "top")
 ```
-There are **r nrow(wq.lake flags)** flagged measurements.
+There are `r nrow(wq.lake.flags)` flagged measurements.
 
 
 # Water chemistry {.tabset}
