@@ -6,25 +6,329 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+
+library(kableExtra)
+library(knitr)
+library(magrittr)
+library(plotly)
+library(svglite)
+library(tidyverse)
+library(streamsandlakes)
+
+# source("levels-qc.R")
+# source("clarity-qc.R")
+# source("wq-qc.R")
+# source("chem-qc.R")
+# source("bmi-qc.R")
+# source("efficiency-qc.R")
+# source("utils")
+# source("calculations")
+# source("timeseries_client")
+
+conn <- OpenDatabaseConnection()
 ```
 
-## R Markdown
+This QA/QC report includes discrete data collected for the Mojave Desert Network Streams and Lakes Protocol from 2009 to 2019.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Sites not visited
+This is a list of sites that were not visited for annual monitoring during a field season. Stream sampling moved from GRBA_S_BAKR2 (South Fork) to GRBA_S_BAKR3 (Main Stem) in 2011. Brown Lake and Dead Lake were monitored during the pilot field season in 2009. Dead Lake and Johnson Lake were not monitored in 2013 due to the lapse in federal appropriations.
+``` {r no.visits}
+# no.visits <- qcNoAnnualVisit(conn)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+# no.visits %>%
+#  DT::datatable()
 ```
 
-## Including Plots
+# Lake level and benchmark elevations {.tabset}
+## Benchmark elevations
+These are the mean values and standard deviations of final corrected elevations for each benchmark across all field seasons. Digital level readings began in 2018.
+``` {r benchmark.elevations}
+benchmark.elevations <- SurveyPointElevation(conn)
 
-You can also embed plots, for example:
+benchmark.elevations$ClosureError_ft <- round(benchmark.elevations$ClosureError_ft, 4)
+benchmark.elevations$FinalCorrectedElevation_ft <- round(benchmark.elevations$FinalCorrectedElevation_ft, 4)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+benchmark.elevations %>%
+  DT::datatable()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## String survey heights
+These are the mean values and standard deviations of string survey heights for each benchmark for each field season. The height of the benchmark above the water surface was typically measured seven times during the string survey. String surveys ended in 2018 and were replaced by digit level readings during that same field season, which have higher accuracy and precision.
+``` {r string.heights}
+string.heights <- qcStringSurveyHeights(conn)
+
+string.heights$MeanHeight_ft <- round(string.heights$MeanHeight_ft, 4)
+string.heights$StDevHeight_ft <- round(string.heights$StDevHeight_ft, 4)
+
+string.heights %>%
+  DT::datatable()
+```
+
+## String survey elevations
+These are the mean values and standard deviations of string survey lake level elevations for each field season. The reference mark designated Benchmark 1 was typically used to calculate the final lake level at each lake. String surveys ended in 2018 and were replaced by digit level readings during that same field season, which have higher accuracy and precision.
+``` {r string.elevations}
+string.elevations <- qcStringSurveyElevations(conn)
+
+string.elevations$MeanFinalElevation_ft <- round(string.elevations$MeanFinalElevation_ft, 4)
+string.elevations$StDevFinalElevation_ft <- round(string.elevations$StDevFinalElevation_ft, 4)
+
+string.elevations %>%
+  DT::datatable()
+```
+
+## Benchmark plots
+This is a plot of the final corrected elevations for each benchmark for each field season. Consistent upward or downward trends in the elevation of a benchmark may indicate that the benchmark is unstable. An abrupt change in the elevation of a benchmark may indicate disturbance at the location of the benchmark. Only digital level readings are included, which began in 2018.
+``` {r benchmark.plots}
+benchmark.plots <- PlotBenchmarkElevation(conn)
+
+benchmark.plots
+```
+
+
+# Lake water clarity (Secchi depth) {.tabset}
+## Depths exceed lake
+This is a list of records where Secchi depth measurements are greater than the lake depth entered during the visit.
+``` {r depths.exceed.lake}
+depths.exceed.lake <- qcSecchiGTDepth(conn)
+
+depths.exceed.lake %>%
+  DT::datatable()
+```
+
+There are `r nrow(depths.exceed.lake)` records with this inconsistency.
+
+## Lake dry, depths exist
+This is a list of records where the lake **is** dry and clarity data or Secchi depth measurements exist.
+``` {r lake.dry.depths.exist}
+lake.dry.depths.exist <- qcLakeDryMeasurementsExist(conn)
+
+lake.dry.depths.exist %>%
+  DT::datatable()
+```
+There are `r nrow(lake.dry.depths.exist)` records with this inconsistency.
+
+## Lake not dry, no clarity
+This is a list of records where the lake **is not** dry and calmness, on bottom, or depth to bottom data **do not** exist.
+``` {r lake.not.dry.no.clarity}
+lake.not.dry.no.clarity <- qcLakeNotDryMeasurementsMissing(conn)
+
+lake.not.dry.no.clarity %>%
+  DT::datatable()
+```
+There are `r nrow(lake.not.dry.no.clarity)` records with missing data.
+
+## Lake not dry, no depths
+This is a list of records where the Secchi disk **is not** visible on the bottom of the lake and Secchi depth measurements **do not** exist.
+``` {r lake.not.dry.no.depths}
+lake.not.dry.no.depths <- qcSecchiDepthMissing(conn)
+
+lake.not.dry.no.depths %>%
+  DT::datatable()
+```
+ There are `r nrow(lake.not.dry.no.depths)` records with missing data.
+
+
+# Discrete water quality {.tabset}
+## Stream sanity check
+These are stream water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
+``` {r wq.stream.sanity}
+# wq.stream.sanity <- qcStreamWqSanity(conn)
+
+# wq.stream.sanity %>%
+#  DT::datatable()
+```
+There are **r nrow(wq.stream.sanity)** measurements outside of expected ranges.
+
+## Lake sanity check
+These are lake water quality values that fall above or below the ranges that we typically see in subalpine lake and stream systems. These data are not necessarily incorrect, but they are outliers that should be evaluated using data quality flags and field notes. Wildly impossible values may be the result of typos during data entry. The following records are included in the list below: temperature values greater than 20 C, pH values greater than 10 and less than 6, specific conductance values greater than 1000 uS/cm, dissolved oxygen percent values greater than 110%, and dissolved oxygen concentration values greater than 12 mg/L.
+``` {r wq.lake.sanity}
+# wq.lake.sanity <- qcLakeWqSanity(conn)
+
+# wq.lake.sanity %>%
+#  DT::datatable()
+```
+There are **r nrow(wq.lake.sanity)** measurements outside of expected ranges.
+
+## Stream data quality flags
+These are stream water quality values that have data quality flags. I = Information: These data do not have any suspected problems, but there may be information regarding the equipment or conditions in which they were collected that could inform their interpretation. W = Warning: These data are suspected to have problems and should only be used after careful assessment of instrument and environmental factors. C = Critical: These data are suspected to have serious problems and are likely unusable.
+``` {r wq.stream.flags}
+# wq.stream.flags <- qcStreamWqFlags(conn)
+
+# wq.stream.flags %>%
+#  DT:datatable()
+```
+There are **r nrow(wq.stream.flags)** flagged measurements.
+
+## Lake data quality flags
+These are lake water quality values that have data quality flags. I = Information: These data do not have any suspected problems, but there may be information regarding the equipment or conditions in which they were collected that could inform their interpretation. W = Warning: These data are suspected to have problems and should only be used after careful assessment of instrument and environmental factors. C = Critical: These data are suspected to have serious problems and are likely unusable.
+``` {r wq.lake.flags}
+# wq.lake.flags <- qcLakeWqFlags(conn)
+
+# wq.lake.flags %>%
+#  DT:datatable()
+```
+There are **r nrow(wq.lake flags)** flagged measurements.
+
+
+# Water chemistry {.tabset}
+## Data quality flags
+These are water chemistry values that have data quality flags. I = Information: These data do not have any suspected problems, but there may be information regarding the equipment or conditions in which they were collected that could inform their interpretation. W = Warning: These data are suspected to have problems and should only be used after careful assessment of instrument and environmental factors. C = Critical: These data are suspected to have serious problems and are likely unusable.
+``` {r chem.flags}
+chem.flags <- qcChemFlags(conn)
+
+chem.flags %>%
+  DT::datatable()
+```
+There are `r nrow(chem.flags)` flagged analytes.
+
+## Lab duplicates
+Laboratory duplicates and triplicates are re-analyses of an analyte from the same sample. These duplicates and triplicates can be used to confirm or replace a suspicious initial result. This is a list of the relative percent difference (RPD) values for laboratory duplicates and triplicates. Results that exceed the 30% method quality objective (MQO) threshold are flagged.
+``` {r lab.dupes}
+lab.dupes <- qcChemLabDupes(conn)
+
+lab.dupes %>%
+  DT::datatable()
+```
+There are `r nrow(lab.dupes %>% filter(RPD > 30))` duplicates with RPD values above the 30% MQO threshold.
+
+## Field duplicates
+Field duplicates are additional samples collected from the same location at approximately the same time and using the same methods as the primary sample. These duplicates can help to detect inconsistency in collection methods or variability in water chemistry at a location. This is a list of the relative percent difference (RPD) values for field duplicates and triplicates. Results that exceed the 30% method quality objective (MQO) threshold are flagged.
+``` {r field.dupes}
+field.dupes <- qcChemFieldDupes(conn)
+
+field.dupes %>%
+  DT::datatable()
+```
+There are `r nrow(field.dupes %>% filter(RPD > 30))` duplicates with RPD values above the 30% MQO threshold.
+
+## Field blanks
+**JLB NOTE: I NEED TO CHANGE THIS FUNCTION TO FLAG WHETHER ANALYTE CONCENTRATION > MDL.**
+Field blanks are bottles filled with distilled water as opposed to water sampled at the location. They are handled the same way as primary samples in the field and can help to detect and identify sources of contamination during sampling. This is a list of analyte concentrations that exceed the method detection limit (MDL) for that analyte.
+``` {r field.blanks}
+# field.blanks <- qcChemFieldBlanks(conn)
+
+#field.blanks %>%
+#  DT::datatable()
+```
+There are **r nrow(field.blanks)** analytes from blanks with concentrations greater than the MDL for that analyte.
+
+## Dissolved nitrogen
+These are the records where the concentration of total dissolved nitrogen (TDN) exceeds total nitrogen (UTN). If the discrepancy falls within precision limits, this indicates that nearly all of the nitrogen is dissolved, and the two concentrations are essentially equal to each other. If the discrepancy falls outside of precision limits, this may indicate contamination of the sample.
+``` {r chem.TDN}
+chem.TDN <- qcChemTDN(conn)
+
+chem.TDN %>%
+  DT::datatable()
+```
+There are `r nrow(chem.TDN %>% filter(TDNvUTN >= 0.02))` records where the concentration of dissolved nitrogen is greater than the total nitrogen concentration and the difference is outside the normal limits of variability.
+
+## Nitrate and nitrite
+These are the records where the concentration of nitrate (NO3) and nitrite (NO2) exceeds either total nitrogen (UTN) or total dissolved nitrogen (TDN). If the discrepancy falls within precision limits, this indicates that nearly all of the nitrogen or dissolved nitrogen is in the form of nitrate and nitrite, and the two concentrations are essentially equal to each other. If the discrepancy falls outside of precision limits, this may indicate contamination of the sample.
+``` {r chem.NO3NO2}
+chem.NO3NO2 <- qcChemNO3NO2(conn)
+
+chem.NO3NO2 %>%
+  DT::datatable()
+```
+There are `r nrow(chem.NO3NO2)` records where the concentration of nitrate and nitrate is greater than the concentration of either total nitrogen or total dissolved nitrogen.
+
+## Dissolved phosphorus
+These are the records where the concentration of total dissolved phosphorus exceeds total phosphorus. If the discrepancy falls within precision limits, this indicates that nearly all of the phosphorus is dissolved, and the two concentrations are essentially equal to each other. If the discrepancy falls outside of precision limits, this may indicate contamination of the sample.
+``` {r chem.TDP}
+chem.TDP <- qcChemTDP(conn)
+
+chem.TDP %>%
+  DT::datatable()
+```
+There are `r nrow(chem.TDP %>% filter(TDPvUTP >= 0.003))` records where the concentration of dissolved phosphorus is greater than the total phosphorus concentration and the difference is outside the normal limits of variability.
+
+## MDL
+Minimum detection level (MDL) is defined by the EPA as the "minimum concentration of a substance that can be measured and reported with 99% confidence that the analyte concentration is greater than zero." Below this concentration, presence of the analyte cannot be confirmed. These are the records where the concentration of a certain analyte was less than or equal to the MDL for that analyte.
+``` {r chem.MDL}
+lookup <- getMDLLookup()
+chem.MDL <- qcChemMDL(conn)
+
+chem.MDL %>%
+  DT::datatable()
+```
+There are `r nrow(chem.MDL)` analytes with concentrations less than or equal to the MDL.
+
+## ML
+Minimum level of quantification (ML) is defined as the "concentration at which the analytical system gives a recognizable signal and acceptable calibration point for the analyte." Below this concentration, the analyte may be detected (if greater than the MDL) but not measured at a known level of confidence. These are the records where the concentration of a certain analyte was less than or equal to the ML for that analyte.
+``` {r chem.ML}
+lookup <- getMDLLookup()
+chem.ML <- qcChemML(conn)
+
+chem.ML %>%
+  DT::datatable()
+```
+There are `r nrow(chem.ML)` analytes with concentrations less than or equal to the ML.
+
+# Benthic macroinvertebrates {.tabset}
+## Discrepancies
+These are records with discrepancies between taxa group count (number of taxa within a functional group) and taxa group abundance (abundance of individuals within those taxa). Discrepancies include situations where the taxa count is non-zero but abundance is zero and where abundance is non-zero and taxa count is zero. These situations may arise from the standardization of richness-based (taxa group count) metrics to Operational Taxonomic Units (OTUs), while density-based (taxa group abundance) metrics are based on the raw taxa list.
+``` {r bmi.discrepancies}
+bmi.discrepancies <- qcBMIDiscrepancies(conn)
+
+bmi.discrepancies %>%
+  DT::datatable()
+```
+There are `r nrow(bmi.discrepancies)` metrics with discrepancies between taxa group count and taxa group abundance.
+
+
+# Continuous data from Aquarius – NOT YET IMPLEMENTED FOR R PACKAGE - KEEP THIS OUT OF FINAL VERSION
+
+# Continuous discharge {.tabset}
+## Completeness
+``` {r q.completeness}
+# q.completeness <- qcDischargeCompleteness(conn)
+
+# q.completeness %>%
+#  DT::datatable()
+```
+
+## Data quality grades
+``` {r q.grades}
+# q.grades <- qcDischargeGrades(conn)
+
+# q.grades %>%
+#  DT::datatable()
+```
+
+## Completeness plot
+``` {r q.completeness.plot}
+
+```
+
+## Grades plot
+``` {r q.grades.plot}
+
+```
+
+# Continuous water quality {.tabset}
+## Completeness
+``` {r wq.completeness}
+# wq.completeness <- qcWqCompleteness(conn)
+
+# wq.completeness %>%
+#  DT::datatable()
+```
+
+## Data quality grades
+``` {r wq.grades}
+# wq.grades <- qcWqGrades(conn)
+
+# wq.grades %>%
+#  DT::datatable()
+```
+
+## Completeness plot
+``` {r wq.completeness.plot}
+
+```
+
+## Grades plot
+``` {r wq.grades.plot}
+
+```
