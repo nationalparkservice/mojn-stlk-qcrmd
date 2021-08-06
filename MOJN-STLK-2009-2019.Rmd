@@ -34,7 +34,7 @@ conn <- OpenDatabaseConnection()
 This QA/QC report includes discrete data collected for the Mojave Desert Network Streams and Lakes Protocol from 2009 to 2019.
 
 # Sites not visited
-This is a list of sites that were not visited for annual monitoring during a field season. Stream sampling moved from GRBA_S_BAKR2 (South Fork) to GRBA_S_BAKR3 (Main Stem) in 2011. Brown Lake and Dead Lake were monitored during the pilot field season in 2009. Dead Lake and Johnson Lake were not monitored in 2013 due to the lapse in federal appropriations.
+This is a list of sites that were not visited for annual monitoring during a field season. Stream sampling moved from GRBA_S_BAKR2 (South Fork) to GRBA_S_BAKR3 (Main Stem) in 2011. Brown Lake and Dead Lake were not monitored during the pilot field season in 2009. Dead Lake and Johnson Lake were not monitored in 2013 due to the lapse in federal appropriations.
 ``` {r no.visits}
 no.visits <- qcNoAnnualVisit(conn)
 
