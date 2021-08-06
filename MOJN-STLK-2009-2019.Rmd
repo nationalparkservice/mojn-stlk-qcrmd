@@ -3,8 +3,10 @@ title: "MOJN STLK QAQC Report 2009-2019"
 author: "Mojave Desert Network"
 date: "8/5/2021"
 output:
-  html_document: default
-  pdf_document: default
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -279,10 +281,11 @@ bmi.discrepancies %>%
 ```
 There are `r nrow(bmi.discrepancies)` metrics with discrepancies between taxa group count and taxa group abundance.
 
+<br/><br/>
+<br/><br/>
+**Continuous data from Aquarius – NOT YET IMPLEMENTED FOR R PACKAGE - KEEP THIS OUT OF FINAL VERSION**
 
-# Continuous data from Aquarius – NOT YET IMPLEMENTED FOR R PACKAGE - KEEP THIS OUT OF FINAL VERSION
-
-# Continuous discharge {.tabset}
+# Continuous discharge NYI {.tabset}
 ## Completeness
 ``` {r q.completeness}
 # q.completeness <- qcDischargeCompleteness(conn)
@@ -309,7 +312,7 @@ There are `r nrow(bmi.discrepancies)` metrics with discrepancies between taxa gr
 
 ```
 
-# Continuous water quality {.tabset}
+# Continuous water quality NYI {.tabset}
 ## Completeness
 ``` {r wq.completeness}
 # wq.completeness <- qcWqCompleteness(conn)
