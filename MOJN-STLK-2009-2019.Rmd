@@ -208,15 +208,14 @@ field.dupes %>%
 There are `r nrow(field.dupes %>% filter(RPD > 30))` duplicates with RPD values above the 30% MQO threshold.
 
 ## Field blanks
-**JLB NOTE: I NEED TO CHANGE THIS FUNCTION TO FLAG WHETHER ANALYTE CONCENTRATION > MDL.**
 Field blanks are bottles filled with distilled water as opposed to water sampled at the location. They are handled the same way as primary samples in the field and can help to detect and identify sources of contamination during sampling. This is a list of analyte concentrations that exceed the method detection limit (MDL) for that analyte.
 ``` {r field.blanks}
-# field.blanks <- qcChemFieldBlanks(conn)
+field.blanks <- qcChemFieldBlanks(conn)
 
-#field.blanks %>%
-#  DT::datatable(filter = "top")
+field.blanks %>%
+  DT::datatable(filter = "top")
 ```
-There are **r nrow(field.blanks)** analytes from blanks with concentrations greater than the MDL for that analyte.
+There are `r nrow(field.blanks)` analytes from blanks with concentrations greater than the MDL for that analyte.
 
 ## Dissolved nitrogen
 These are the records where the concentration of total dissolved nitrogen (TDN) exceeds total nitrogen (UTN). If the discrepancy falls within precision limits, this indicates that nearly all of the nitrogen is dissolved, and the two concentrations are essentially equal to each other. If the discrepancy falls outside of precision limits, this may indicate contamination of the sample.
