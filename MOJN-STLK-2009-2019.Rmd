@@ -41,7 +41,7 @@ This is a list of sites that were not visited for annual monitoring during a fie
 no.visits <- qcNoAnnualVisit(conn)
 
 no.visits %>%
-  dplyr::select(-VisitDate) %>%
+  dplyr::select(-c(VisitDate, Park, SiteShort)) %>%
   DT::datatable()
 ```
 
@@ -55,6 +55,7 @@ benchmark.elevations$ClosureError_ft <- round(benchmark.elevations$ClosureError_
 benchmark.elevations$FinalCorrectedElevation_ft <- round(benchmark.elevations$FinalCorrectedElevation_ft, 4)
 
 benchmark.elevations %>%
+  dplyr::select(-c(Park, SiteShort, DPL, VisitType)) %>%
   DT::datatable(filter = "top")
 ```
 
@@ -67,6 +68,8 @@ string.heights$MeanHeight_ft <- round(string.heights$MeanHeight_ft, 4)
 string.heights$StDevHeight_ft <- round(string.heights$StDevHeight_ft, 4)
 
 string.heights %>%
+  dplyr::select(-c(Park, SiteShort, VisitType)) %>%
+  dplyr::ungroup() %>%
   DT::datatable(filter = "top")
 ```
 
@@ -79,6 +82,7 @@ string.elevations$MeanFinalElevation_ft <- round(string.elevations$MeanFinalElev
 string.elevations$StDevFinalElevation_ft <- round(string.elevations$StDevFinalElevation_ft, 4)
 
 string.elevations %>%
+  dplyr::select(-c(Park, SiteShort, VisitType)) %>%
   DT::datatable(filter = "top")
 ```
 
@@ -98,6 +102,7 @@ This is a list of records where Secchi depth measurements are greater than the l
 depths.exceed.lake <- qcSecchiGTDepth(conn)
 
 depths.exceed.lake %>%
+  dplyr::select(-c(Park, SiteShort, VisitType, DPL)) %>%
   DT::datatable(filter = "top")
 ```
 
@@ -109,6 +114,7 @@ This is a list of records where the lake **is** dry and clarity data or Secchi d
 lake.dry.depths.exist <- qcLakeDryMeasurementsExist(conn)
 
 lake.dry.depths.exist %>%
+  dplyr::select(-c(Park, SiteShort, VisitType, DPL)) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(lake.dry.depths.exist)` records with this inconsistency.
@@ -119,6 +125,7 @@ This is a list of records where the lake **is not** dry and calmness, on bottom,
 lake.not.dry.no.clarity <- qcLakeNotDryMeasurementsMissing(conn)
 
 lake.not.dry.no.clarity %>%
+  dplyr::select(-c(Park, SiteShort, VisitType, DPL)) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(lake.not.dry.no.clarity)` records with missing data.
@@ -129,6 +136,7 @@ This is a list of records where the Secchi disk **is not** visible on the bottom
 lake.not.dry.no.depths <- qcSecchiDepthMissing(conn)
 
 lake.not.dry.no.depths %>%
+  dplyr::select(-c(Park, SiteShort, VisitType, DPL)) %>%
   DT::datatable(filter = "top")
 ```
  There are `r nrow(lake.not.dry.no.depths)` records with missing data.
@@ -141,6 +149,8 @@ These are stream water quality values that fall above or below the ranges that w
 wq.stream.sanity <- qcStreamWqSanity(conn)
 
 wq.stream.sanity %>%
+  dplyr::select(-c(Park, SiteType, VisitType)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(wq.stream.sanity)` measurements outside of expected ranges.
@@ -151,6 +161,9 @@ These are lake water quality values that fall above or below the ranges that we 
 wq.lake.sanity <- qcLakeWqSanity(conn)
 
 wq.lake.sanity %>%
+  dplyr::select(-c(Park, SiteType, VisitType)) %>%
+  dplyr::relocate(MeasurementDepth_m, .after = VisitDate) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(wq.lake.sanity)` measurements outside of expected ranges.
@@ -161,6 +174,8 @@ These are stream water quality values that have data quality flags. I = Informat
 wq.stream.flags <- qcStreamWqFlags(conn)
 
 wq.stream.flags %>%
+  dplyr::select(-c(Park, SiteType, VisitType)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(wq.stream.flags)` flagged measurements.
@@ -171,6 +186,9 @@ These are lake water quality values that have data quality flags. I = Informatio
 wq.lake.flags <- qcLakeWqFlags(conn)
 
 wq.lake.flags %>%
+  dplyr::select(-c(Park, SiteType, VisitType)) %>%
+  dplyr::relocate(MeasurementDepth_m, .after = VisitDate) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(wq.lake.flags)` flagged measurements.
@@ -183,6 +201,8 @@ These are water chemistry values that have data quality flags. I = Information: 
 chem.flags <- qcChemFlags(conn)
 
 chem.flags %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.flags)` flagged analytes.
@@ -193,6 +213,8 @@ Laboratory duplicates and triplicates are re-analyses of an analyte from the sam
 lab.dupes <- qcChemLabDupes(conn)
 
 lab.dupes %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(lab.dupes %>% filter(RPD > 30))` duplicates with RPD values above the 30% MQO threshold.
@@ -203,6 +225,8 @@ Field duplicates are additional samples collected from the same location at appr
 field.dupes <- qcChemFieldDupes(conn)
 
 field.dupes %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(field.dupes %>% filter(RPD > 30))` duplicates with RPD values above the 30% MQO threshold.
@@ -213,6 +237,8 @@ Field blanks are bottles filled with distilled water as opposed to water sampled
 field.blanks <- qcChemFieldBlanks(conn)
 
 field.blanks %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(field.blanks)` analytes from blanks with concentrations greater than the MDL for that analyte.
@@ -223,6 +249,8 @@ These are the records where the concentration of total dissolved nitrogen (TDN) 
 chem.TDN <- qcChemTDN(conn)
 
 chem.TDN %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.TDN %>% filter(TDNvUTN >= 0.02))` records where the concentration of dissolved nitrogen is greater than the total nitrogen concentration and the difference is outside the normal limits of variability.
@@ -233,6 +261,8 @@ These are the records where the concentration of nitrate (NO3) and nitrite (NO2)
 chem.NO3NO2 <- qcChemNO3NO2(conn)
 
 chem.NO3NO2 %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.NO3NO2)` records where the concentration of nitrate and nitrate is greater than the concentration of either total nitrogen or total dissolved nitrogen.
@@ -243,6 +273,8 @@ These are the records where the concentration of total dissolved phosphorus exce
 chem.TDP <- qcChemTDP(conn)
 
 chem.TDP %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.TDP %>% filter(TDPvUTP >= 0.003))` records where the concentration of dissolved phosphorus is greater than the total phosphorus concentration and the difference is outside the normal limits of variability.
@@ -254,6 +286,8 @@ lookup <- getMDLLookup()
 chem.MDL <- qcChemMDL(conn)
 
 chem.MDL %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.MDL)` analytes with concentrations less than or equal to the MDL.
@@ -265,9 +299,12 @@ lookup <- getMDLLookup()
 chem.ML <- qcChemML(conn)
 
 chem.ML %>%
+  dplyr::select(-c(SampleFrame)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(chem.ML)` analytes with concentrations less than or equal to the ML.
+
 
 # Benthic macroinvertebrates {.tabset}
 ## Discrepancies
@@ -276,6 +313,8 @@ These are records with discrepancies between taxa group count (number of taxa wi
 bmi.discrepancies <- qcBMIDiscrepancies(conn)
 
 bmi.discrepancies %>%
+  dplyr::select(-c(Park, SiteShort, VisitType)) %>%
+  dplyr::relocate(FieldSeason, .after = VisitDate) %>%
   DT::datatable(filter = "top")
 ```
 There are `r nrow(bmi.discrepancies)` metrics with discrepancies between taxa group count and taxa group abundance.
@@ -283,6 +322,23 @@ There are `r nrow(bmi.discrepancies)` metrics with discrepancies between taxa gr
 <br/><br/>
 <br/><br/>
 **Continuous data from Aquarius – NOT YET IMPLEMENTED FOR R PACKAGE - KEEP THIS OUT OF FINAL VERSION**
+
+# Continuous lake level NYI {.tabset}
+## Completeness
+``` {r lake.completeness}
+# lake.completeness <- qcLakeCompleteness(conn)
+
+# lake.completeness %>%
+#  DT::datatable(filter = "top")
+```
+
+## Data quality grades
+``` {r lake.grades}
+# lake.grades <- qcLakeGrades(conn)
+
+# lake.grades %>%
+#  DT::datatable(filter = "top")
+```
 
 # Continuous discharge NYI {.tabset}
 ## Completeness
